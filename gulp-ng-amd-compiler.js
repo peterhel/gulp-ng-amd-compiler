@@ -3,12 +3,39 @@ var through = require('through2');
 var gutil = require('gulp-util');
 var PluginError = gutil.PluginError;
 var fs = require('fs');
-var Reference = require('reference');
+var Reference = require('./reference.js');
 // Consts
 const PLUGIN_NAME = 'gulp-ng-amd-compiler';
 const REF_REFEXP = /module\s([^\s]+)[^"]+"(app\.[^"]+)/g;
 // Plugin level function(dealing with files)
 
+function sort(modules){
+  this.sortedModules = [];
+  this.sortedModulesKeys = [];
+  
+  for(key in modules){
+    var unsortedModule = modules[key];
+
+    var lastReferenceIndex = this.sortedModulesKeys.length - 1;
+
+    for (var i = this.sortedModulesKeys.length - 1; i >= 0; i--) {
+      var sortedKey = this.sortedModulesKeys[i],
+        sortedModule = this.sortedModules[i],
+        //hasReference = hasDependency(sortedKey, unsortedModule.dependencies), 
+        isReference = hasDependency(key, sortedModule.dependencies);
+
+      if(isReference){
+        console.log('module "%s" is dependent on "%s". moving on.', key, sortedKey);
+        lastReferenceIndex = i;
+      }
+    }
+
+    this.sortedModulesKeys.splice(lastReferenceIndex, 0, key);
+    this.sortedModules.splice(lastReferenceIndex, 0, unsortedModule);
+  }
+
+  return this.sortedModules;
+}
 
 
 function getReferences(fileContent){
@@ -19,13 +46,7 @@ function getReferences(fileContent){
   {
 
     if(match){
-      var refModule  = {
-        name: match[1],
-        file: match[2].replace(/\./g, '/')
-      }
-
-      console.log('    ' + refModule.name);
-
+      var refModule = new Reference(match[1], match[2].replace(/\./g, '/'));
       references.push(refModule);
     }
   }
@@ -54,7 +75,7 @@ function handleReferences(modules, references){
 }
 
 function hasDependency(moduleName, dependencies){
-  //console.log('    Checking dependencies for module "%s"', moduleName);
+  console.log('    Checking dependencies for module "%s"', moduleName);
   for (var i = 0; i < dependencies.length; i++) {
     if(moduleName == dependencies[i].name){
       return true;
@@ -87,7 +108,8 @@ function gulpNgAMDCompiler() {
 
         var modulesList = Object.keys(modules);
 
-        try{
+        var sortedModulesArray = sort(modules);
+/*        try{
           var sorted = 1;
 
           while(sorted > 0)
@@ -125,9 +147,9 @@ function gulpNgAMDCompiler() {
         }
         catch(e){
           return callback(e);    
-        }
-        for(var i = 0; i < modulesList.length; i++){
-          newContent +=  modules[modulesList[i]].content;
+        }*/
+        for(var i = 0; i < sortedModulesArray.length; i++){
+          newContent +=  sortedModulesArray[i].content;
         }
 
 
