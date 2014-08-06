@@ -21,11 +21,9 @@ function sort(modules){
     for (var i = this.sortedModulesKeys.length - 1; i >= 0; i--) {
       var sortedKey = this.sortedModulesKeys[i],
         sortedModule = this.sortedModules[i],
-        //hasReference = hasDependency(sortedKey, unsortedModule.dependencies), 
         isReference = hasDependency(key, sortedModule.dependencies);
 
       if(isReference){
-        console.log('module "%s" is dependent on "%s". moving on.', key, sortedKey);
         lastReferenceIndex = i;
       }
     }
@@ -62,8 +60,6 @@ function handleReferences(modules, references){
     }
     var refContent = fs.readFileSync('src/' + currentReferencedModule.file + '.js');
 
-  console.log('References for "%s"', currentReferencedModule.name);
-
     var refsReferences = getReferences(refContent);
 
     for(module in modules){
@@ -75,7 +71,6 @@ function handleReferences(modules, references){
 }
 
 function hasDependency(moduleName, dependencies){
-  console.log('    Checking dependencies for module "%s"', moduleName);
   for (var i = 0; i < dependencies.length; i++) {
     if(moduleName == dependencies[i].name){
       return true;
@@ -91,7 +86,6 @@ function gulpNgAMDCompiler() {
 
     var mainModuleFile = file.path.substring(file.path.indexOf('app/'), file.path.indexOf('.js'));
     var mainModuleName = mainModuleFile.replace(/\//, '.');
-    console.log('References for "%s"', mainModuleName);
 
     var modules = { };
     var newContent = '';
@@ -109,45 +103,7 @@ function gulpNgAMDCompiler() {
         var modulesList = Object.keys(modules);
 
         var sortedModulesArray = sort(modules);
-/*        try{
-          var sorted = 1;
 
-          while(sorted > 0)
-          {
-              sorted = 0;
-
-                    modulesList = modulesList.sort(function(a, b){
-                      if(modules[a].dependencies.length == 0){
-                        return -1;
-                      }
-                      if(modules[b].dependencies.length == 0){
-                        return 1;
-                      }
-
-                      var hasReference = hasDependency(b, modules[a].dependencies), 
-                        isReference = hasDependency(a, modules[b].dependencies);
-
-                      //console.log('Module %s deps: %s', a, JSON.stringify(modules[a].dependencies));
-                      if(hasReference && isReference) {
-                        throw new Error(PLUGIN_NAME + ': Circular dependencies found between "'+ a +'" and "'+b+'"');
-                      }
-                      if(isReference){
-                        console.log('module "%s" is referenced in "%s". returns -1.', b, a);
-                        sorted++;
-                        return -1;
-                      }
-                      if(hasReference) {
-                        console.log('module "%s" is dependent on "%s". returns 1.', a, b);
-                        //sorted++;
-                        return 1;
-                      }
-                      return 0;
-                    });
-          }
-        }
-        catch(e){
-          return callback(e);    
-        }*/
         for(var i = 0; i < sortedModulesArray.length; i++){
           newContent +=  sortedModulesArray[i].content;
         }
