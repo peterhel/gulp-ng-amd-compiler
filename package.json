@@ -7,7 +7,7 @@
     { 
       "type" : "git",
       "url" : "https://github.com/peterhel/gulp-ng-amd-compiler.git"
-    }
+    },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
