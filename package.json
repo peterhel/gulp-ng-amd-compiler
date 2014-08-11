@@ -15,7 +15,7 @@
     "gulpplugin"
   ],
   "author": "Peter Helenefors",
-  "license": "ISC",
+  "license": "",
   "dependencies": {
     "gulp-util": "^3.0.0",
     "through2": "^0.5.1"
