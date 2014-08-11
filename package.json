@@ -1,8 +1,13 @@
 {
   "name": "gulp-ng-amd-compiler",
   "version": "0.0.0",
-  "description": "",
+  "description": "Gulp compiler for angular AMD.",
   "main": "gulp-ng-amd-compiler.js",
+  "repository" :
+    { 
+      "type" : "git",
+      "url" : "https://github.com/peterhel/gulp-ng-amd-compiler.git"
+    }
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
