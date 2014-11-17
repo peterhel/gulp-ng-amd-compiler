@@ -1,29 +1,32 @@
+/* global require, Buffer, module */
+/* jshint esnext:true */
 // through2 is a thin wrapper around node transform streams
 var through = require('through2');
-var gutil = require('gulp-util');
-var PluginError = gutil.PluginError;
+// var gutil = require('gulp-util');
+// var PluginError = gutil.PluginError;
 var fs = require('fs');
 var Reference = require('./reference.js');
 // Consts
 const PLUGIN_NAME = 'gulp-ng-amd-compiler';
+const MODULE_REGEXP = /angular\.amd\.module\([^\)]+\)/g;
 const REF_REFEXP = /module\s([^\s]+)[^"]+"(app\.[^"]+)/g;
 // Plugin level function(dealing with files)
 
-function sort(modules){
+function sort(modules) {
   this.sortedModules = [];
   this.sortedModulesKeys = [];
-  
-  for(key in modules){
+
+  for (var key in modules) {
     var unsortedModule = modules[key];
 
     var lastReferenceIndex = this.sortedModulesKeys.length - 1;
 
     for (var i = this.sortedModulesKeys.length - 1; i >= 0; i--) {
-      var sortedKey = this.sortedModulesKeys[i],
-        sortedModule = this.sortedModules[i],
+      // var sortedKey = this.sortedModulesKeys[i],
+      var sortedModule = this.sortedModules[i],
         isReference = hasDependency(key, sortedModule.dependencies);
 
-      if(isReference){
+      if (isReference) {
         lastReferenceIndex = i;
       }
     }
@@ -36,43 +39,47 @@ function sort(modules){
 }
 
 
-function getReferences(fileContent){
+function getReferences(fileContent) {
   'use strict';
-  var match, references = [];
+  var moduleDefinitions, moduleReference, references = [];
+  while (moduleDefinitions = MODULE_REGEXP.exec(fileContent)) {
+    if (moduleDefinitions) {
+      while (moduleReference = REF_REFEXP.exec(moduleDefinitions)) {
 
-  while(match = REF_REFEXP.exec(fileContent))
-  {
-
-    if(match){
-      var refModule = new Reference(match[1], match[2].replace(/\./g, '/'));
-      references.push(refModule);
+        if (moduleReference) {
+          var refModule = new Reference(moduleReference[1], moduleReference[2].replace(/\./g, '/'));
+          references.push(refModule);
+        }
+      }
     }
   }
   return references;
 }
 
-function handleReferences(modules, references){
+function handleReferences(modules, references) {
   for (var i = 0; i < references.length; i++) {
     var currentReferencedModule = references[i];
-    if(modules[currentReferencedModule.name])
-    {
+    if (modules[currentReferencedModule.name]) {
       continue;
     }
     var refContent = fs.readFileSync('src/' + currentReferencedModule.file + '.js');
 
     var refsReferences = getReferences(refContent);
 
-    for(module in modules){
-      modules[currentReferencedModule.name] = { content: refContent, dependencies: refsReferences };
+    for (var module in modules) {
+      modules[currentReferencedModule.name] = {
+        content: refContent,
+        dependencies: refsReferences
+      };
     }
 
-    handleReferences(modules, refsReferences)
+    handleReferences(modules, refsReferences);
   }
 }
 
-function hasDependency(moduleName, dependencies){
+function hasDependency(moduleName, dependencies) {
   for (var i = 0; i < dependencies.length; i++) {
-    if(moduleName == dependencies[i].name){
+    if (moduleName === dependencies[i].name) {
       return true;
     }
   }
@@ -87,32 +94,35 @@ function gulpNgAMDCompiler() {
     var mainModuleFile = file.path.substring(file.path.indexOf('app/'), file.path.indexOf('.js'));
     var mainModuleName = mainModuleFile.replace(/\//, '.');
 
-    var modules = { };
+    var modules = {};
     var newContent = '';
-    if (file.isNull()) {
-       // Do nothing if no contents
-    }
+    // if (file.isNull()) {
+    //   // Do nothing if no contents
+    // }
     if (file.isBuffer()) {
-        var mainContent = String(file.contents);
+      var mainContent = String(file.contents);
 
-        var references = getReferences(mainContent);
+      var references = getReferences(mainContent);
 
-        modules[mainModuleName] = { content: mainContent, dependencies: references };
-        handleReferences(modules, references);
+      modules[mainModuleName] = {
+        content: mainContent,
+        dependencies: references
+      };
+      handleReferences(modules, references);
 
-        var modulesList = Object.keys(modules);
+      // var modulesList = Object.keys(modules);
 
-        var sortedModulesArray = sort(modules);
+      var sortedModulesArray = sort(modules);
 
-        for(var i = 0; i < sortedModulesArray.length; i++){
-          newContent +=  sortedModulesArray[i].content;
-        }
+      for (var i = 0; i < sortedModulesArray.length; i++) {
+        newContent += sortedModulesArray[i].content;
+      }
 
 
-        file.contents = new Buffer(newContent);
+      file.contents = new Buffer(newContent);
     }
 
-    if(file.isStream()){
+    if (file.isStream()) {
       return callback(new Error(PLUGIN_NAME + ": Streaming not supported"));
     }
 
@@ -123,7 +133,7 @@ function gulpNgAMDCompiler() {
 
   // returning the file stream
   return stream;
-};
+}
 
 // Exporting the plugin main function
 module.exports = gulpNgAMDCompiler;
