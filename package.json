@@ -1,6 +1,6 @@
 {
   "name": "gulp-ng-amd-compiler",
-  "version": "1.0.2-dev2",
+  "version": "1.0.2",
   "description": "Gulp compiler for angular AMD.",
   "main": "gulp-ng-amd-compiler.js",
   "repository" :
